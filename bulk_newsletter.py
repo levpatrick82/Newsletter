@@ -1,3 +1,7 @@
+import os
+import csv
+import random
+import logging
 import time
 import urllib.parse
 import tempfile
@@ -140,28 +144,24 @@ driver = None  # Global driver instance, initialized in main()
 def scroll_and_wait_for_clickable(element, timeout=10):
     global driver
     try:
-        # Scroll to element
-        driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", element)
-        time.sleep(0.5)  # Allow smooth scroll to complete
-        
-        # Wait for element to be clickable
-        element = WebDriverWait(driver, timeout).until(
-            EC.element_to_be_clickable((By.XPATH, f"//{element.tag_name}[@id='{element.get_attribute('id')}']" if element.get_attribute('id') else f"(//{element.tag_name})[{get_element_xpath_index(element)}]"))
-        )
-        return element
-    except Exception as e:
-        logging.warning(f"Error in scroll_and_wait_for_clickable: {e}")
-        return element
-
-def get_element_xpath_index(element):
-    try:
-        elements = driver.find_elements(By.TAG_NAME, element.tag_name)
-        for i, elem in enumerate(elements, 1):
-            if elem == element:
-                return i
-    except:
-        pass
-    return 1
+        driver.execute_script("arguments[0].scrollIntoView({behavior: 'auto', block: 'center', inline: 'nearest'});", element)
+        time.sleep(random.uniform(0.2, 0.4))  # Short pause for scroll
+        return WebDriverWait(driver, timeout).until(EC.element_to_be_clickable(element))
+    except TimeoutException:
+        element_info = f"Tag='{element.tag_name if hasattr(element, 'tag_name') else 'N/A'}'"
+        try:
+            element_info += f", ID='{element.get_attribute('id')}'"
+        except Exception:
+            pass
+        try:
+            element_info += f", Text='{element.text[:30] if hasattr(element, 'text') else ''}'"
+        except Exception:
+            pass
+        logging.warning(f"Timeout waiting for element to be clickable after scroll: {element_info}")
+        raise
+    except Exception as e_scroll:
+        logging.error(f"Error in scroll_and_wait_for_clickable for {getattr(element,'tag_name','N/A')} : {e_scroll}")
+        raise
 
 def check_for_captcha(page_source):
     captcha_indicators = [
