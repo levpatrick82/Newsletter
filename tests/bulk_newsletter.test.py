@@ -1,9 +1,8 @@
 import unittest
-from unittest.mock import patch, MagicMock
 from pathlib import Path
 import sys
 sys.path.append(str(Path(__file__).parent.parent))
-from bulk_newsletter import process_website, extract_main_domain, check_for_captcha
+from bulk_newsletter import extract_main_domain, check_for_captcha
 
 class TestBulkNewsletter(unittest.TestCase):
     def test_extract_main_domain(self):
@@ -29,33 +28,6 @@ class TestBulkNewsletter(unittest.TestCase):
         for html_content, expected in test_cases:
             result = check_for_captcha(html_content)
             self.assertEqual(result, expected)
-
-    @patch('selenium.webdriver.Chrome')
-    def test_process_website(self, mock_chrome):
-        # Mock driver setup
-        mock_driver = MagicMock()
-        mock_chrome.return_value = mock_driver
-        
-        def test_process_website_success():
-            # Mock successful newsletter signup
-            mock_driver.page_source = 'Normal page content'
-            mock_driver.find_elements.return_value = [
-                MagicMock(
-                    get_attribute=lambda x: 'email' if x == 'type' else '',
-                    is_displayed=lambda: True,
-                    is_enabled=lambda: True
-                )
-            ]
-            
-            result = process_website('test@example.com', 'https://example.com', 1)
-            self.assertEqual(result, 'Success')
-        
-        def test_process_website_captcha():
-            # Mock CAPTCHA detection
-            mock_driver.page_source = '<div class="g-recaptcha"></div>'
-            result = process_website('test@example.com', 'https://example.com', 1)
-            self.assertEqual(result, 'CAPTCHA')
-        
 
 if __name__ == '__main__':
     unittest.main()
