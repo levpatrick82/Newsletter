@@ -5,13 +5,10 @@ import logging
 import time
 import urllib.parse
 import tempfile
-import shutil
-import subprocess
+import shutil 
 import re
 from contextlib import contextmanager
 from datetime import datetime
-from multiprocessing import Pool, cpu_count
-from functools import partial
 from urllib.parse import urlparse, urljoin
 
 from selenium import webdriver
@@ -652,25 +649,19 @@ def main():
     try:
         websites_to_process = load_websites_from_csv(CSV_FILENAME)
         email = SIGNUP_EMAIL
+        logging.info(f"Processing {len(websites_to_process)} websites sequentially")
         
-        # Calculate number of processes to use (30 or less if not enough websites)
-        num_processes = min(5, len(websites_to_process))  # Reduced to 5 parallel processes
-        logging.info(f"Starting {num_processes} parallel processes")
-        
-        # Create a pool of processes
-        with Pool(processes=num_processes) as pool:
-            # Create a partial function with the email parameter
-            process_func = partial(process_website, email)
-            
-            # Map websites to processes with process IDs
-            website_with_ids = [(website, i+1) for i, website in enumerate(websites_to_process)]
-            
-            # Execute the processing in parallel
-            pool.starmap(process_func, website_with_ids)
+        # Process websites sequentially
+        for i, website in enumerate(websites_to_process):
+            process_id = i + 1
+            try:
+                process_website(email, website, process_id)
+            except Exception as e:
+                logging.error(f"Error processing website {website}: {e}")
+                continue
             
     except Exception as e:
         logging.error(f"Error in main execution: {e}")
-        raise
 
 if __name__ == "__main__":
     # Configure logging to handle multiple processes
